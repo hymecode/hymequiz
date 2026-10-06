@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offline SAT Test Generator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-28">
+<header class="bg-slate-900 text-white p-5">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold">Offline SAT Test Generator</h1>
+    <p class="text-slate-300 text-sm">Build a test, download one HTML file, and students can take it with no internet.</p>
+  </div>
+</header>
+
+<main class="max-w-4xl mx-auto p-4 space-y-4">
+  <section class="bg-white rounded-xl shadow p-5 space-y-3">
+    <input id="title" class="w-full border rounded-lg p-3 text-lg font-semibold" placeholder="Test title (e.g. SAT Practice Test 1)" oninput="T.title=this.value">
+    <textarea id="desc" rows="2" class="w-full border rounded-lg p-3" placeholder="Description / instructions shown to students" oninput="T.desc=this.value"></textarea>
+  </section>
+
+  <section class="bg-white rounded-xl shadow p-5">
+    <div class="flex flex-wrap gap-6 items-end">
+      <div>
+        <p class="text-sm font-medium mb-1">Section</p>
+        <div class="flex gap-2">
+          <button id="bERW" onclick="setSec('ERW')">ERW</button>
+          <button id="bMATH" onclick="setSec('MATH')">Math</button>
+        </div>
+      </div>
+      <div>
+        <p class="text-sm font-medium mb-1">Module</p>
+        <div class="flex gap-2">
+          <button id="m1" onclick="setMod(1)">Module 1</button>
+          <button id="m2" onclick="setMod(2)">Module 2</button>
+        </div>
+      </div>
+      <div>
+        <label class="text-sm font-medium block mb-1" for="minutes">Timer (minutes)</label>
+        <input id="minutes" type="number" min="1" class="border rounded-lg p-2 w-28" oninput="cur().minutes=Math.max(1,parseInt(this.value)||1)">
+      </div>
+    </div>
+    <p id="summary" class="text-sm text-slate-500 mt-4"></p>
+  </section>
+
+  <div id="qs"></div>
+  <button onclick="addQ()" class="w-full border-2 border-dashed border-slate-400 rounded-xl p-4 text-slate-600 hover:bg-white">+ Add question to this module</button>
+</main>
+
+<div class="fixed bottom-0 inset-x-0 bg-white border-t shadow-lg p-3">
+  <div class="max-w-4xl mx-auto flex flex-wrap gap-3 justify-between">
+    <button onclick="loadSample()" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">Load sample SAT template</button>
+    <button onclick="download()" class="px-5 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700">Download test file</button>
+  </div>
+</div>
+
+<textarea id="tpl" style="display:none;"><!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>__TITLE__</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#f1f5f9;color:#1e293b}
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:12px;box-shadow:0 1px 3px #0002;padding:20px;margin-bottom:16px}
+button{cursor:pointer;border:0;border-radius:8px;padding:10px 16px;font-size:15px;background:#1d4ed8;color:#fff}
+button.sec{background:#e2e8f0;color:#1e293b}button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible{outline:3px solid #f59e0b}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.timer{font:600 22px ui-monospace,monospace;padding:6px 14px;background:#0f172a;color:#fff;border-radius:8px}
+.timer.low{background:#dc2626}
+.layout{display:grid;grid-template-columns:1fr 210px;gap:16px;align-items:start}
+@media(max-width:700px){.layout{grid-template-columns:1fr}}
+.pal{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.pal button{padding:8px 0;background:#fff;color:#1e293b;border:2px solid #cbd5e1}
+.pal button.ans{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.pal button.cur{outline:3px solid #f59e0b}
+.opt{display:flex;gap:10px;align-items:flex-start;border:2px solid #cbd5e1;border-radius:10px;padding:12px;margin:8px 0;cursor:pointer}
+.opt.sel{border-color:#1d4ed8;background:#eff6ff}
+.pre{white-space:pre-wrap;line-height:1.6}
+input[type=text]{width:100%;padding:12px;font-size:18px;border:2px solid #cbd5e1;border-radius:8px}
+</style></head><body><div class="wrap" id="app"></div>
+<script>
+const TEST=/*__DATA__*/null;
+const $=id=>document.getElementById(id), app=$('app'), L=['A','B','C','D'];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;amp;','<':'&amp;lt;','>':'&amp;gt;','"':'&amp;quot;',"'":'&amp;#39;'}[c]));
+let cur=0, idx=0, ans=[], left=0, tick=null;
+const done={};
+function menu(){
+  clearInterval(tick);
+  app.innerHTML=`<div class="card"><h1 style="margin:0 0 8px">${esc(TEST.title)}</h1><div class="pre">${esc(TEST.desc)}</div></div>`+
+  TEST.modules.map((m,i)=>`<div class="card top"><div><b>${esc(m.name)}</b><div>${m.qs.length} questions, ${m.minutes} min${done[i]?`. Last score: ${done[i]}`:''}</div></div><button onclick="start(${i})">${done[i]?'Retake module':'Start module'}</button></div>`).join('');
+}
+function start(i){
+  cur=i; idx=0; const m=TEST.modules[i];
+  ans=m.qs.map(()=>''); left=m.minutes*60;
+  clearInterval(tick);
+  tick=setInterval(()=>{left--; drawTimer(); if(left<=0) submit(true);},1000);
+  draw();
+}
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+function drawTimer(){const t=$('timer'); if(t){t.textContent=fmt(Math.max(left,0)); t.className='timer'+(left<=60?' low':'');}}
+function draw(){
+  const m=TEST.modules[cur], q=m.qs[idx], last=idx===m.qs.length-1;
+  const body=q.type==='mc'
+    ? q.opts.map((o,k)=>`<div class="opt ${ans[idx]===L[k]?'sel':''}" onclick="pick('${L[k]}')"><b>${L[k]}.</b><span class="pre">${esc(o)}</span></div>`).join('')
+    : `<input type="text" placeholder="Type your answer" value="${esc(ans[idx])}" oninput="ans[idx]=this.value;drawPal()">`;
+  app.innerHTML=`<div class="card top"><b>${esc(m.name)}</b><div class="timer" id="timer"></div></div>
+  <div class="layout"><div class="card"><p><b>Question ${idx+1} of ${m.qs.length}</b></p><div class="pre" style="margin-bottom:12px">${esc(q.text)}</div>${body}
+  <div class="top" style="margin-top:20px"><button class="sec" onclick="go(-1)" ${idx===0?'disabled':''}>Previous</button>
+  ${last?`<button style="background:#16a34a" onclick="submit(false)">Submit exam</button>`:`<button onclick="go(1)">Next</button>`}</div></div>
+  <div class="card"><b>Question palette</b><div class="pal" id="pal" style="margin-top:10px"></div>
+  <button style="margin-top:14px;width:100%;background:#16a34a" onclick="submit(false)">Submit exam</button></div></div>`;
+  drawPal(); drawTimer();
+}
+function drawPal(){$('pal').innerHTML=ans.map((a,i)=>`<button class="${a.trim()?'ans':''} ${i===idx?'cur':''}" onclick="idx=${i};draw()">${i+1}</button>`).join('');}
+function pick(l){ans[idx]=l;draw();}
+function go(d){idx+=d;draw();}
+const norm=s=>String(s).trim().toLowerCase().replace(/\s+/g,'').replace(/,/g,'');
+function num(s){
+  s=norm(s); const f=s.match(/^(-?\d*\.?\d+)\/(-?\d*\.?\d+)$/);
+  if(f) return +f[1]/+f[2];
+  return /^-?\d*\.?\d+$/.test(s)?+s:NaN;
+}
+function ok(q,a){
+  if(!a.trim()) return false;
+  if(q.type==='mc') return a===q.ans;
+  return q.ans.split('|').some(k=>{
+    if(norm(k)===norm(a)) return true;
+    const x=num(k), y=num(a);
+    return !isNaN(x)&&!isNaN(y)&&Math.abs(x-y)<1e-9;
+  });
+}
+function submit(auto){
+  const m=TEST.modules[cur], un=ans.filter(a=>!a.trim()).length;
+  if(!auto && un && !confirm(un+' question(s) unanswered. Submit anyway?')) return;
+  clearInterval(tick);
+  let sc=0;
+  const rows=m.qs.map((q,i)=>{
+    const r=ok(q,ans[i]); if(r) sc++;
+    const yours=!ans[i].trim()?'<i>No answer</i>':(q.type==='mc'?`${ans[i]}. ${esc(q.opts[L.indexOf(ans[i])])}`:esc(ans[i]));
+    const right=q.type==='mc'?`${q.ans}. ${esc(q.opts[L.indexOf(q.ans)])}`:esc(q.ans.split('|').join(' or '));
+    return `<div class="card" style="border-left:6px solid ${r?'#16a34a':'#dc2626'}"><b>Question ${i+1}: ${r?'Correct':'Incorrect'}</b><div class="pre" style="margin:8px 0">${esc(q.text)}</div><div>Your answer: ${yours}</div>${r?'':`<div>Correct answer: <b>${right}</b></div>`}</div>`;
+  }).join('');
+  done[cur]=sc+'/'+m.qs.length;
+  const pct=Math.round(sc/m.qs.length*100);
+  app.innerHTML=`<div class="card" style="text-align:center"><h2>${esc(m.name)} results</h2><div style="font-size:48px;font-weight:700">${sc} / ${m.qs.length}</div><div style="font-size:22px;margin-bottom:12px">${pct}%</div>${auto?'<p>Time expired. Your answers were submitted automatically.</p>':''}<button onclick="menu()">Back to modules</button></div>`+rows;
+  window.scrollTo(0,0);
+}
+
+menu();
+</script></body></html></textarea>
+
+<!-- ============ GENERATOR LOGIC ============ -->
+<script>
+const $ = id => document.getElementById(id);
+const L = ['A','B','C','D'];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mk = m => ({minutes: m, qs: []});
+let T, sec = 'ERW', mod = 1;
+
+function reset(){ T = {title:'', desc:'', data:{ERW:{1:mk(32),2:mk(32)}, MATH:{1:mk(35),2:mk(35)}}}; }
+const cur = () => T.data[sec][mod];
+const newQ = () => ({type:'mc', text:'', opts:['','','',''], ans:''});
+
+/* ---- Navigation ---- */
+function setSec(s){ sec = s; render(); }
+function setMod(m){ mod = m; render(); }
+
+/* ---- Question edits (no re-render while typing, so focus is kept) ---- */
+function addQ(){ cur().qs.push(newQ()); render(); }
+function delQ(i){ if(confirm('Delete question '+(i+1)+'?')){ cur().qs.splice(i,1); render(); } }
+function setType(i,t){ const q=cur().qs[i]; q.type=t; q.ans=''; render(); }
+function setText(i,v){ cur().qs[i].text = v; }
+function setOpt(i,k,v){ cur().qs[i].opts[k] = v; }
+function setAns(i,v){ cur().qs[i].ans = v; }
+
+/* ---- Rendering ---- */
+const tab = on => 'px-4 py-2 rounded-lg font-medium border ' + (on ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-100');
+const inp = 'w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-slate-400';
+
+function card(q,i){
+  const body = q.type === 'mc'
+    ? '<p class="text-sm text-slate-500 mt-3">Options: select the radio button next to the correct answer.</p>' +
+      q.opts.map((o,k)=>`<div class="flex items-center gap-2 mt-2">
+        <input type="radio" class="w-5 h-5" name="c${i}" ${q.ans===L[k]?'checked':''} onchange="setAns(${i},'${L[k]}')" aria-label="Correct answer ${L[k]}">
+        <span class="font-bold w-5">${L[k]}</span>
+        <input class="${inp}" value="${esc(o)}" placeholder="Option ${L[k]}" oninput="setOpt(${i},${k},this.value)"></div>`).join('')
+    : `<label class="text-sm text-slate-500 block mt-3">Correct answer. Use | to accept several forms, e.g. 7/8|0.875</label>
+       <input class="${inp}" value="${esc(q.ans)}" placeholder="Answer key" oninput="setAns(${i},this.value)">`;
+  return `<div class="bg-white rounded-xl shadow p-5 mb-4">
+    <div class="flex flex-wrap justify-between gap-2 mb-3">
+      <h3 class="font-bold">Question ${i+1}</h3>
+      <div class="flex gap-2">
+        <select class="border rounded-lg p-2" onchange="setType(${i},this.value)">
+          <option value="mc" ${q.type==='mc'?'selected':''}>Type A: Multiple choice</option>
+          <option value="grid" ${q.type==='grid'?'selected':''}>Type B: Student-produced response</option>
+        </select>
+        <button class="px-3 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50" onclick="delQ(${i})">Delete</button>
+      </div>
+    </div>
+    <textarea rows="5" class="${inp}" placeholder="Paste the passage and question stem here" oninput="setText(${i},this.value)">${esc(q.text)}</textarea>
+    ${body}</div>`;
+}
+
+function render(){
+  $('title').value = T.title; $('desc').value = T.desc;
+  $('bERW').className = tab(sec==='ERW'); $('bMATH').className = tab(sec==='MATH');
+  $('m1').className = tab(mod===1); $('m2').className = tab(mod===2);
+  $('minutes').value = cur().minutes;
+  const n = (s,m) => T.data[s][m].qs.length;
+  $('summary').textContent = `Questions: ERW M1 ${n('ERW',1)}, ERW M2 ${n('ERW',2)}, Math M1 ${n('MATH',1)}, Math M2 ${n('MATH',2)}`;
+  const qs = cur().qs;
+  $('qs').innerHTML = qs.length ? qs.map(card).join('')
+    : '<div class="text-center text-slate-500 p-8 bg-white rounded-xl shadow mb-4">This module is empty. Add a question below, or load the sample template.</div>';
+}
+
+/* ---- Sample template ---- */
+function loadSample(){
+  if(!confirm('Replace the current test with the sample template?')) return;
+  const mc=(text,opts,ans)=>({type:'mc',text,opts,ans});
+  const gi=(text,ans)=>({type:'grid',text,opts:['','','',''],ans});
+  reset();
+  T.title='SAT Practice Test (Sample)';
+  T.desc='Answer every question. The timer starts when you open a module. Use the palette to jump between questions.';
+  T.data.ERW[1].qs=[
+    mc('Which choice completes the text with the most logical and precise word?\n\nAlthough the author\'s early novels were ______ by critics, her later work won widespread acclaim.',['celebrated','dismissed','imitated','anthologized'],'B'),
+    mc('Which choice completes the text so that it conforms to the conventions of Standard English?\n\nThe committee ______ reviewing the proposal since Monday.',['have been','has been','were','are'],'B'),
+    mc('Which choice completes the text with the most logical transition?\n\nThe experiment was repeated three times. ______ the results were identical each time.',['However,','Remarkably,','Otherwise,','Instead,'],'B')];
+  T.data.ERW[2].qs=[
+    mc('Which choice completes the text so that it conforms to Standard English?\n\nThe researchers, ______ had spent years studying coral reefs, published their findings.',['who','whom','which','whose'],'A')];
+  T.data.MATH[1].qs=[
+    mc('If 3x + 7 = 25, what is the value of x?',['4','6','8','18'],'B'),
+    mc('What is the slope of the line y = 4x - 9?',['-9','-4','4','9'],'C'),
+    gi('What is the value of 3/4 + 1/8? (Enter a fraction or decimal.)','7/8|0.875')];
+  T.data.MATH[2].qs=[
+    gi('A rectangle has length 12 and width 5. What is the length of its diagonal?','13')];
+  sec='ERW'; mod=1; render();
+}
+
+/* ---- Validation + export ---- */
+function validate(){
+  const errs=[]; let total=0;
+  if(!T.title.trim()) errs.push('Enter a test title.');
+  for(const s of ['ERW','MATH']) for(const m of [1,2]) T.data[s][m].qs.forEach((q,i)=>{
+    total++; const lb=`${s} Module ${m}, Q${i+1}`;
+    if(!q.text.trim()) errs.push(lb+': question text is empty.');
+    if(q.type==='mc'){
+      if(q.opts.some(o=>!o.trim())) errs.push(lb+': fill in all four options.');
+      if(!q.ans) errs.push(lb+': select the correct option.');
+    } else if(!q.ans.trim()) errs.push(lb+': enter the answer key.');
+  });
+  if(!total) errs.push('Add at least one question.');
+  return errs;
+}
+
+function download(){
+  const errs = validate();
+  if(errs.length){ alert('Fix these first:\n\n' + errs.slice(0,8).join('\n') + (errs.length>8 ? `\n...and ${errs.length-8} more` : '')); return; }
+  const modules = [];
+  for(const s of ['ERW','MATH']) for(const m of [1,2]){
+    const d = T.data[s][m]; if(!d.qs.length) continue;
+    modules.push({
+      name: (s==='ERW'?'ERW':'Math') + ' Module ' + m,
+      minutes: d.minutes,
+      qs: d.qs.map(q => q.type==='mc'
+        ? {type:'mc', text:q.text, opts:q.opts, ans:q.ans}
+        : {type:'grid', text:q.text, ans:q.ans})
+    });
+  }
+  const json = JSON.stringify({title:T.title, desc:T.desc, modules}).replace(/</g,'\\u003c');
+  let html = $('tpl').value;
+  html = html.split('__TITLE__').join(esc(T.title)).split('/*__DATA__*/null').join(json);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], {type:'text/html'}));
+  a.download = (T.title.trim().replace(/[^a-z0-9]+/gi,'-').toLowerCase() || 'sat-test') + '.html';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+
+reset(); render();
+</script>
+</body>
+</html>
