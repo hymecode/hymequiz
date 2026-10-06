@@ -1,281 +1,476 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Offline SAT Test Generator</title>
-<script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offline SAT Test Generator</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#172033;background:#f1f5f9;font-synthesis:none}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh}
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer}
+    button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+    .site-header{background:#0f172a;color:#fff;padding:22px 20px}
+    .site-header>div,main{max-width:980px;margin:0 auto}
+    .site-header h1{margin:0;font-size:1.55rem}
+    .site-header p{margin:5px 0 0;color:#cbd5e1;font-size:.95rem}
+    main{padding:24px 18px 48px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 8px #0f172a0a}
+    .wizard-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+    .wizard-head h2{margin:0;font-size:1.35rem}
+    .muted{color:#64748b}
+    .progress{height:9px;background:#e2e8f0;border-radius:9px;overflow:hidden;margin:17px 0 8px}
+    .progress>div{height:100%;background:#2563eb;transition:width .2s}
+    .step-label{font-size:.88rem;color:#64748b}
+    .field{display:block;width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:12px;background:#fff;color:#172033}
+    .field:focus{border-color:#2563eb}
+    label.field-label{display:block;font-weight:650;margin:17px 0 7px}
+    textarea.field{resize:vertical;line-height:1.5}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .between{justify-content:space-between}
+    .button{border:0;border-radius:9px;padding:10px 16px;font-weight:650;background:#e2e8f0;color:#172033}
+    .button:hover{filter:brightness(.97)}
+    .button.primary{background:#1d4ed8;color:white}
+    .button.success{background:#059669;color:white}
+    .button.danger{background:#fff;color:#b91c1c;border:1px solid #fecaca}
+    .button:disabled{opacity:.45;cursor:not-allowed}
+    .step-content{margin-top:23px}
+    .module-title{margin:0 0 5px;font-size:1.22rem}
+    .counter{font-weight:700;color:#334155}
+    .q-editor{padding:18px;margin-top:15px;border:1px solid #e2e8f0;border-radius:12px;background:#fbfdff}
+    .q-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+    .q-head h3{margin:0;font-size:1rem}
+    .option-edit{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:9px;margin-top:10px}
+    .option-edit textarea{min-height:70px}
+    .correct-choice{display:flex;gap:8px;align-items:center;white-space:nowrap}
+    .empty{border:1px dashed #94a3b8;border-radius:12px;padding:28px 16px;text-align:center;color:#64748b;margin-top:16px}
+    .hint{font-size:.9rem;color:#64748b;margin:9px 0 0}
+    .toolbar{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:22px;padding-top:18px;border-top:1px solid #e2e8f0}
+    .table-wrap{overflow-x:auto;margin-top:18px}
+    table{width:100%;border-collapse:collapse}
+    th,td{text-align:left;padding:12px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+    th{background:#f8fafc;font-size:.88rem}
+    .warning{color:#9a3412}
+    .warnings{background:#fff7ed;border:1px solid #fed7aa;padding:13px 16px;border-radius:10px;margin-top:18px}
+    .success-note{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;padding:12px;border-radius:9px}
+    .hidden{display:none!important}
+    @media(max-width:600px){main{padding:14px 10px 34px}.card{padding:16px}.wizard-head{align-items:flex-start;flex-direction:column}.toolbar{flex-direction:column-reverse}.toolbar .row{width:100%;justify-content:space-between}.button{padding:10px 12px}}
+  </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen pb-28">
-<header class="bg-slate-900 text-white p-5">
-  <div class="max-w-4xl mx-auto">
-    <h1 class="text-2xl font-bold">Offline SAT Test Generator</h1>
-    <p class="text-slate-300 text-sm">Build a test, download one HTML file, and students can take it with no internet.</p>
-  </div>
-</header>
-
-<main class="max-w-4xl mx-auto p-4 space-y-4">
-  <section class="bg-white rounded-xl shadow p-5 space-y-3">
-    <input id="title" class="w-full border rounded-lg p-3 text-lg font-semibold" placeholder="Test title (e.g. SAT Practice Test 1)" oninput="T.title=this.value">
-    <textarea id="desc" rows="2" class="w-full border rounded-lg p-3" placeholder="Description / instructions shown to students" oninput="T.desc=this.value"></textarea>
-  </section>
-
-  <section class="bg-white rounded-xl shadow p-5">
-    <div class="flex flex-wrap gap-6 items-end">
-      <div>
-        <p class="text-sm font-medium mb-1">Section</p>
-        <div class="flex gap-2">
-          <button id="bERW" onclick="setSec('ERW')">ERW</button>
-          <button id="bMATH" onclick="setSec('MATH')">Math</button>
-        </div>
-      </div>
-      <div>
-        <p class="text-sm font-medium mb-1">Module</p>
-        <div class="flex gap-2">
-          <button id="m1" onclick="setMod(1)">Module 1</button>
-          <button id="m2" onclick="setMod(2)">Module 2</button>
-        </div>
-      </div>
-      <div>
-        <label class="text-sm font-medium block mb-1" for="minutes">Timer (minutes)</label>
-        <input id="minutes" type="number" min="1" class="border rounded-lg p-2 w-28" oninput="cur().minutes=Math.max(1,parseInt(this.value)||1)">
-      </div>
+<body>
+  <!-- Generator structure: a six-step wizard edits one test model; the embedded standalone template is populated only at download time. -->
+  <header class="site-header">
+    <div>
+      <h1>Offline SAT Test Generator</h1>
+      <p>Build a full mock test and download one student-ready HTML file that works without internet.</p>
     </div>
-    <p id="summary" class="text-sm text-slate-500 mt-4"></p>
-  </section>
+  </header>
+  <main>
+    <section class="card" aria-labelledby="wizard-title">
+      <div class="wizard-head">
+        <div><h2 id="wizard-title">Create Full Mock SAT Test</h2><div id="step-caption" class="step-label"></div></div>
+        <button class="button danger" type="button" onclick="clearDraft()">Clear draft</button>
+      </div>
+      <div class="progress" role="progressbar" aria-label="Wizard progress" aria-valuemin="1" aria-valuemax="6" id="progress"><div id="progress-fill"></div></div>
+      <div id="step-content" class="step-content"></div>
+      <div class="toolbar">
+        <button id="back-button" class="button" type="button" onclick="backStep()">Back</button>
+        <div class="row">
+          <button class="button" type="button" onclick="loadSample()">Load Sample SAT Template</button>
+          <button id="next-button" class="button primary" type="button" onclick="nextStep()">Next</button>
+        </div>
+      </div>
+    </section>
+    <p id="save-status" class="hint" role="status" aria-live="polite"></p>
+  </main>
 
-  <div id="qs"></div>
-  <button onclick="addQ()" class="w-full border-2 border-dashed border-slate-400 rounded-xl p-4 text-slate-600 hover:bg-white">+ Add question to this module</button>
-</main>
-
-<div class="fixed bottom-0 inset-x-0 bg-white border-t shadow-lg p-3">
-  <div class="max-w-4xl mx-auto flex flex-wrap gap-3 justify-between">
-    <button onclick="loadSample()" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">Load sample SAT template</button>
-    <button onclick="download()" class="px-5 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700">Download test file</button>
-  </div>
-</div>
-
-<textarea id="tpl" style="display:none;"><!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>__TITLE__</title>
+  <!-- Student template structure: welcome -> timed module/review -> break -> remaining modules -> results; all styling and logic are inline. -->
+  <textarea id="student-template" hidden>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Student test structure: welcome, timed adaptive-flow modules, scheduled break, module review/submission, and results. -->
+<meta name="color-scheme" content="light"><title>Offline SAT Practice Test</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#f1f5f9;color:#1e293b}
-.wrap{max-width:1000px;margin:0 auto;padding:16px}
-.card{background:#fff;border-radius:12px;box-shadow:0 1px 3px #0002;padding:20px;margin-bottom:16px}
-button{cursor:pointer;border:0;border-radius:8px;padding:10px 16px;font-size:15px;background:#1d4ed8;color:#fff}
-button.sec{background:#e2e8f0;color:#1e293b}button:disabled{opacity:.4;cursor:default}
-button:focus-visible,input:focus-visible{outline:3px solid #f59e0b}
-.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.timer{font:600 22px ui-monospace,monospace;padding:6px 14px;background:#0f172a;color:#fff;border-radius:8px}
-.timer.low{background:#dc2626}
-.layout{display:grid;grid-template-columns:1fr 210px;gap:16px;align-items:start}
-@media(max-width:700px){.layout{grid-template-columns:1fr}}
-.pal{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.pal button{padding:8px 0;background:#fff;color:#1e293b;border:2px solid #cbd5e1}
-.pal button.ans{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
-.pal button.cur{outline:3px solid #f59e0b}
-.opt{display:flex;gap:10px;align-items:flex-start;border:2px solid #cbd5e1;border-radius:10px;padding:12px;margin:8px 0;cursor:pointer}
-.opt.sel{border-color:#1d4ed8;background:#eff6ff}
-.pre{white-space:pre-wrap;line-height:1.6}
-input[type=text]{width:100%;padding:12px;font-size:18px;border:2px solid #cbd5e1;border-radius:8px}
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#172033;background:#f1f5f9;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;min-height:100vh}button,input{font:inherit}button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+.wrap{max-width:1050px;margin:0 auto;padding:18px}.card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;margin:0 0 16px;box-shadow:0 2px 8px #0f172a0a}
+h1,h2,h3,p{overflow-wrap:anywhere}.hero h1{font-size:clamp(1.6rem,4vw,2.6rem);margin:0 0 10px}.pre{white-space:pre-wrap;line-height:1.6}
+.muted{color:#64748b}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.btn{border:0;border-radius:9px;padding:11px 16px;background:#1d4ed8;color:#fff;font-weight:650}.btn.secondary{background:#e2e8f0;color:#172033}.btn.green{background:#059669}.btn.red{background:#b91c1c}.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.start{padding:15px 30px;font-size:1.2rem}
+.timer{font:700 1.4rem ui-monospace,Consolas,monospace;background:#0f172a;color:white;padding:8px 14px;border-radius:9px;min-width:98px;text-align:center}.timer.low{background:#dc2626}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 255px;gap:16px;align-items:start}
+.palette{display:grid;grid-template-columns:repeat(5,minmax(32px,1fr));gap:7px;margin-top:12px}
+.palette button{min-height:38px;border:2px solid #cbd5e1;border-radius:7px;background:#fff;color:#172033;font-weight:650;padding:4px}
+.palette button.answered{background:#2563eb;color:#fff;border-color:#2563eb}.palette button.flagged{box-shadow:inset 0 -4px #f59e0b}.palette button.current{outline:3px solid #f59e0b;outline-offset:1px}
+.choice{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:#fff;color:#172033;border:2px solid #cbd5e1;border-radius:10px;padding:13px;margin:9px 0}
+.choice:hover{border-color:#64748b}.choice.selected{background:#eff6ff;border-color:#2563eb}.choice-letter{font-weight:800;min-width:24px}
+.answer-input{width:100%;border:2px solid #cbd5e1;border-radius:9px;padding:12px;font-size:1.1rem}
+.notice{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:9px;padding:11px 13px;margin:12px 0}
+.break-clock{text-align:center;font:800 clamp(2.6rem,9vw,5rem) ui-monospace,Consolas,monospace;color:#1d4ed8;margin:20px}
+.score-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.score-box{background:#f8fafc;border-radius:10px;padding:14px}.score-box strong{display:block;font-size:1.6rem}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.tabs button{border:1px solid #cbd5e1;border-radius:8px;background:white;padding:8px 13px}.tabs button.active{background:#0f172a;color:white}
+.result-row{border-left:6px solid #dc2626}.result-row.correct{border-left-color:#16a34a}.status{font-weight:750}.status.correct{color:#15803d}.status.wrong{color:#b91c1c}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:11px 18px;border-radius:9px;background:#0f172a;color:white;z-index:5}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.score-grid{grid-template-columns:1fr}.wrap{padding:10px}.card{padding:16px}}
+@media print{body{background:white}.wrap{max-width:none;padding:0}.no-print,button{display:none!important}.card{box-shadow:none;break-inside:avoid;border-color:#bbb}.result-row{break-inside:avoid}.result-question{display:block!important}details>summary{display:none}details:not([open])>*:not(summary){display:block!important}}
 </style></head><body><div class="wrap" id="app"></div>
 <script>
-const TEST=/*__DATA__*/null;
-const $=id=>document.getElementById(id), app=$('app'), L=['A','B','C','D'];
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;amp;','<':'&amp;lt;','>':'&amp;gt;','"':'&amp;quot;',"'":'&amp;#39;'}[c]));
-let cur=0, idx=0, ans=[], left=0, tick=null;
-const done={};
-function menu(){
-  clearInterval(tick);
-  app.innerHTML=`<div class="card"><h1 style="margin:0 0 8px">${esc(TEST.title)}</h1><div class="pre">${esc(TEST.desc)}</div></div>`+
-  TEST.modules.map((m,i)=>`<div class="card top"><div><b>${esc(m.name)}</b><div>${m.qs.length} questions, ${m.minutes} min${done[i]?`. Last score: ${done[i]}`:''}</div></div><button onclick="start(${i})">${done[i]?'Retake module':'Start module'}</button></div>`).join('');
+/* Embedded test data is escaped by the generator so creator text cannot terminate this script element. */
+const TEST=__TEST_DATA__;
+const STORAGE_KEY='offline-sat-exam-'+(TEST.id||'test');
+const app=document.getElementById('app'), letters=['A','B','C','D'];
+const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;amp;','<':'&amp;lt;','>':'&amp;gt;','"':'&amp;quot;',"'":'&amp;#39;'}[ch]));
+const freshState=()=>({screen:'welcome',flowIndex:0,questionIndex:0,answers:{},flags:{},submitted:{},endTimes:{},startedAt:null,finishedAt:null,breakEndAt:null});
+let state=freshState(), tickHandle=null, filterMode='all';
+function loadState(){
+  try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;const saved=JSON.parse(raw);if(saved&&typeof saved==='object')state={...freshState(),...saved};}
+  catch(error){state=freshState();}
 }
-function start(i){
-  cur=i; idx=0; const m=TEST.modules[i];
-  ans=m.qs.map(()=>''); left=m.minutes*60;
-  clearInterval(tick);
-  tick=setInterval(()=>{left--; drawTimer(); if(left<=0) submit(true);},1000);
-  draw();
+function saveState(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+  catch(error){/* Keep the in-memory state usable when storage is unavailable or full. */}
 }
-const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
-function drawTimer(){const t=$('timer'); if(t){t.textContent=fmt(Math.max(left,0)); t.className='timer'+(left<=60?' low':'');}}
-function draw(){
-  const m=TEST.modules[cur], q=m.qs[idx], last=idx===m.qs.length-1;
-  const body=q.type==='mc'
-    ? q.opts.map((o,k)=>`<div class="opt ${ans[idx]===L[k]?'sel':''}" onclick="pick('${L[k]}')"><b>${L[k]}.</b><span class="pre">${esc(o)}</span></div>`).join('')
-    : `<input type="text" placeholder="Type your answer" value="${esc(ans[idx])}" oninput="ans[idx]=this.value;drawPal()">`;
-  app.innerHTML=`<div class="card top"><b>${esc(m.name)}</b><div class="timer" id="timer"></div></div>
-  <div class="layout"><div class="card"><p><b>Question ${idx+1} of ${m.qs.length}</b></p><div class="pre" style="margin-bottom:12px">${esc(q.text)}</div>${body}
-  <div class="top" style="margin-top:20px"><button class="sec" onclick="go(-1)" ${idx===0?'disabled':''}>Previous</button>
-  ${last?`<button style="background:#16a34a" onclick="submit(false)">Submit exam</button>`:`<button onclick="go(1)">Next</button>`}</div></div>
-  <div class="card"><b>Question palette</b><div class="pal" id="pal" style="margin-top:10px"></div>
-  <button style="margin-top:14px;width:100%;background:#16a34a" onclick="submit(false)">Submit exam</button></div></div>`;
-  drawPal(); drawTimer();
+function activeFlow(){
+  const flow=[];
+  const rw=TEST.modules.filter(m=>m.section==='rw'&&m.questions.length);
+  const math=TEST.modules.filter(m=>m.section==='math'&&m.questions.length);
+  rw.forEach(m=>flow.push({type:'module',module:m}));
+  if(rw.length&&math.length)flow.push({type:'break'});
+  math.forEach(m=>flow.push({type:'module',module:m}));
+  return flow;
 }
-function drawPal(){$('pal').innerHTML=ans.map((a,i)=>`<button class="${a.trim()?'ans':''} ${i===idx?'cur':''}" onclick="idx=${i};draw()">${i+1}</button>`).join('');}
-function pick(l){ans[idx]=l;draw();}
-function go(d){idx+=d;draw();}
-const norm=s=>String(s).trim().toLowerCase().replace(/\s+/g,'').replace(/,/g,'');
-function num(s){
-  s=norm(s); const f=s.match(/^(-?\d*\.?\d+)\/(-?\d*\.?\d+)$/);
-  if(f) return +f[1]/+f[2];
-  return /^-?\d*\.?\d+$/.test(s)?+s:NaN;
+const FLOW=activeFlow();
+function answersFor(id){if(!Array.isArray(state.answers[id]))state.answers[id]=Array.from({length:(TEST.modules.find(m=>m.id===id)||{questions:[]}).questions.length},()=> '');return state.answers[id];}
+function flagsFor(id){if(!Array.isArray(state.flags[id]))state.flags[id]=Array.from({length:(TEST.modules.find(m=>m.id===id)||{questions:[]}).questions.length},()=>false);return state.flags[id];}
+function formatTime(seconds){const s=Math.max(0,Math.floor(seconds));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function renderWelcome(){
+  clearInterval(tickHandle);
+  const restart='<button class="btn secondary" onclick="restartTest()">Restart test</button>';
+  app.innerHTML='<section class="card hero"><h1>'+escapeHtml(TEST.title)+'</h1><div class="pre">'+escapeHtml(TEST.description)+'</div></section>'+
+    '<section class="card"><h2>Test modules</h2>'+TEST.modules.map(m=>'<div class="row" style="padding:10px 0;border-bottom:1px solid #e2e8f0"><b>'+escapeHtml(m.name)+'</b><span class="muted">'+m.questions.length+' questions · '+m.minutes+' minutes</span></div>').join('')+
+    '<p class="muted">Modules with no questions will be skipped. Your progress is saved on this device.</p><div class="row" style="justify-content:flex-start"><button class="btn start" onclick="startTest()">Start</button>'+restart+'</div></section>';
 }
-function ok(q,a){
-  if(!a.trim()) return false;
-  if(q.type==='mc') return a===q.ans;
-  return q.ans.split('|').some(k=>{
-    if(norm(k)===norm(a)) return true;
-    const x=num(k), y=num(a);
-    return !isNaN(x)&&!isNaN(y)&&Math.abs(x-y)<1e-9;
-  });
+function startTest(){
+  state=freshState();state.startedAt=Date.now();state.flowIndex=0;saveState();
+  advanceToCurrent();
 }
-function submit(auto){
-  const m=TEST.modules[cur], un=ans.filter(a=>!a.trim()).length;
-  if(!auto && un && !confirm(un+' question(s) unanswered. Submit anyway?')) return;
-  clearInterval(tick);
-  let sc=0;
-  const rows=m.qs.map((q,i)=>{
-    const r=ok(q,ans[i]); if(r) sc++;
-    const yours=!ans[i].trim()?'<i>No answer</i>':(q.type==='mc'?`${ans[i]}. ${esc(q.opts[L.indexOf(ans[i])])}`:esc(ans[i]));
-    const right=q.type==='mc'?`${q.ans}. ${esc(q.opts[L.indexOf(q.ans)])}`:esc(q.ans.split('|').join(' or '));
-    return `<div class="card" style="border-left:6px solid ${r?'#16a34a':'#dc2626'}"><b>Question ${i+1}: ${r?'Correct':'Incorrect'}</b><div class="pre" style="margin:8px 0">${esc(q.text)}</div><div>Your answer: ${yours}</div>${r?'':`<div>Correct answer: <b>${right}</b></div>`}</div>`;
-  }).join('');
-  done[cur]=sc+'/'+m.qs.length;
-  const pct=Math.round(sc/m.qs.length*100);
-  app.innerHTML=`<div class="card" style="text-align:center"><h2>${esc(m.name)} results</h2><div style="font-size:48px;font-weight:700">${sc} / ${m.qs.length}</div><div style="font-size:22px;margin-bottom:12px">${pct}%</div>${auto?'<p>Time expired. Your answers were submitted automatically.</p>':''}<button onclick="menu()">Back to modules</button></div>`+rows;
-  window.scrollTo(0,0);
+function restartTest(){
+  if(state.startedAt&&!confirm('Restart this test and erase the saved answers?'))return;
+  state=freshState();saveState();renderWelcome();
 }
-
-menu();
-</script></body></html></textarea>
-
-<!-- ============ GENERATOR LOGIC ============ -->
-<script>
-const $ = id => document.getElementById(id);
-const L = ['A','B','C','D'];
-const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const mk = m => ({minutes: m, qs: []});
-let T, sec = 'ERW', mod = 1;
-
-function reset(){ T = {title:'', desc:'', data:{ERW:{1:mk(32),2:mk(32)}, MATH:{1:mk(35),2:mk(35)}}}; }
-const cur = () => T.data[sec][mod];
-const newQ = () => ({type:'mc', text:'', opts:['','','',''], ans:''});
-
-/* ---- Navigation ---- */
-function setSec(s){ sec = s; render(); }
-function setMod(m){ mod = m; render(); }
-
-/* ---- Question edits (no re-render while typing, so focus is kept) ---- */
-function addQ(){ cur().qs.push(newQ()); render(); }
-function delQ(i){ if(confirm('Delete question '+(i+1)+'?')){ cur().qs.splice(i,1); render(); } }
-function setType(i,t){ const q=cur().qs[i]; q.type=t; q.ans=''; render(); }
-function setText(i,v){ cur().qs[i].text = v; }
-function setOpt(i,k,v){ cur().qs[i].opts[k] = v; }
-function setAns(i,v){ cur().qs[i].ans = v; }
-
-/* ---- Rendering ---- */
-const tab = on => 'px-4 py-2 rounded-lg font-medium border ' + (on ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-100');
-const inp = 'w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-slate-400';
-
-function card(q,i){
-  const body = q.type === 'mc'
-    ? '<p class="text-sm text-slate-500 mt-3">Options: select the radio button next to the correct answer.</p>' +
-      q.opts.map((o,k)=>`<div class="flex items-center gap-2 mt-2">
-        <input type="radio" class="w-5 h-5" name="c${i}" ${q.ans===L[k]?'checked':''} onchange="setAns(${i},'${L[k]}')" aria-label="Correct answer ${L[k]}">
-        <span class="font-bold w-5">${L[k]}</span>
-        <input class="${inp}" value="${esc(o)}" placeholder="Option ${L[k]}" oninput="setOpt(${i},${k},this.value)"></div>`).join('')
-    : `<label class="text-sm text-slate-500 block mt-3">Correct answer. Use | to accept several forms, e.g. 7/8|0.875</label>
-       <input class="${inp}" value="${esc(q.ans)}" placeholder="Answer key" oninput="setAns(${i},this.value)">`;
-  return `<div class="bg-white rounded-xl shadow p-5 mb-4">
-    <div class="flex flex-wrap justify-between gap-2 mb-3">
-      <h3 class="font-bold">Question ${i+1}</h3>
-      <div class="flex gap-2">
-        <select class="border rounded-lg p-2" onchange="setType(${i},this.value)">
-          <option value="mc" ${q.type==='mc'?'selected':''}>Type A: Multiple choice</option>
-          <option value="grid" ${q.type==='grid'?'selected':''}>Type B: Student-produced response</option>
-        </select>
-        <button class="px-3 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50" onclick="delQ(${i})">Delete</button>
-      </div>
-    </div>
-    <textarea rows="5" class="${inp}" placeholder="Paste the passage and question stem here" oninput="setText(${i},this.value)">${esc(q.text)}</textarea>
-    ${body}</div>`;
-}
-
-function render(){
-  $('title').value = T.title; $('desc').value = T.desc;
-  $('bERW').className = tab(sec==='ERW'); $('bMATH').className = tab(sec==='MATH');
-  $('m1').className = tab(mod===1); $('m2').className = tab(mod===2);
-  $('minutes').value = cur().minutes;
-  const n = (s,m) => T.data[s][m].qs.length;
-  $('summary').textContent = `Questions: ERW M1 ${n('ERW',1)}, ERW M2 ${n('ERW',2)}, Math M1 ${n('MATH',1)}, Math M2 ${n('MATH',2)}`;
-  const qs = cur().qs;
-  $('qs').innerHTML = qs.length ? qs.map(card).join('')
-    : '<div class="text-center text-slate-500 p-8 bg-white rounded-xl shadow mb-4">This module is empty. Add a question below, or load the sample template.</div>';
-}
-
-/* ---- Sample template ---- */
-function loadSample(){
-  if(!confirm('Replace the current test with the sample template?')) return;
-  const mc=(text,opts,ans)=>({type:'mc',text,opts,ans});
-  const gi=(text,ans)=>({type:'grid',text,opts:['','','',''],ans});
-  reset();
-  T.title='SAT Practice Test (Sample)';
-  T.desc='Answer every question. The timer starts when you open a module. Use the palette to jump between questions.';
-  T.data.ERW[1].qs=[
-    mc('Which choice completes the text with the most logical and precise word?\n\nAlthough the author\'s early novels were ______ by critics, her later work won widespread acclaim.',['celebrated','dismissed','imitated','anthologized'],'B'),
-    mc('Which choice completes the text so that it conforms to the conventions of Standard English?\n\nThe committee ______ reviewing the proposal since Monday.',['have been','has been','were','are'],'B'),
-    mc('Which choice completes the text with the most logical transition?\n\nThe experiment was repeated three times. ______ the results were identical each time.',['However,','Remarkably,','Otherwise,','Instead,'],'B')];
-  T.data.ERW[2].qs=[
-    mc('Which choice completes the text so that it conforms to Standard English?\n\nThe researchers, ______ had spent years studying coral reefs, published their findings.',['who','whom','which','whose'],'A')];
-  T.data.MATH[1].qs=[
-    mc('If 3x + 7 = 25, what is the value of x?',['4','6','8','18'],'B'),
-    mc('What is the slope of the line y = 4x - 9?',['-9','-4','4','9'],'C'),
-    gi('What is the value of 3/4 + 1/8? (Enter a fraction or decimal.)','7/8|0.875')];
-  T.data.MATH[2].qs=[
-    gi('A rectangle has length 12 and width 5. What is the length of its diagonal?','13')];
-  sec='ERW'; mod=1; render();
-}
-
-/* ---- Validation + export ---- */
-function validate(){
-  const errs=[]; let total=0;
-  if(!T.title.trim()) errs.push('Enter a test title.');
-  for(const s of ['ERW','MATH']) for(const m of [1,2]) T.data[s][m].qs.forEach((q,i)=>{
-    total++; const lb=`${s} Module ${m}, Q${i+1}`;
-    if(!q.text.trim()) errs.push(lb+': question text is empty.');
-    if(q.type==='mc'){
-      if(q.opts.some(o=>!o.trim())) errs.push(lb+': fill in all four options.');
-      if(!q.ans) errs.push(lb+': select the correct option.');
-    } else if(!q.ans.trim()) errs.push(lb+': enter the answer key.');
-  });
-  if(!total) errs.push('Add at least one question.');
-  return errs;
-}
-
-function download(){
-  const errs = validate();
-  if(errs.length){ alert('Fix these first:\n\n' + errs.slice(0,8).join('\n') + (errs.length>8 ? `\n...and ${errs.length-8} more` : '')); return; }
-  const modules = [];
-  for(const s of ['ERW','MATH']) for(const m of [1,2]){
-    const d = T.data[s][m]; if(!d.qs.length) continue;
-    modules.push({
-      name: (s==='ERW'?'ERW':'Math') + ' Module ' + m,
-      minutes: d.minutes,
-      qs: d.qs.map(q => q.type==='mc'
-        ? {type:'mc', text:q.text, opts:q.opts, ans:q.ans}
-        : {type:'grid', text:q.text, ans:q.ans})
-    });
+function advanceToCurrent(){
+  while(state.flowIndex<FLOW.length){
+    const item=FLOW[state.flowIndex];
+    if(item.type==='module'&&state.submitted[item.module.id]){state.flowIndex++;continue;}
+    break;
   }
-  const json = JSON.stringify({title:T.title, desc:T.desc, modules}).replace(/</g,'\\u003c');
-  let html = $('tpl').value;
-  html = html.split('__TITLE__').join(esc(T.title)).split('/*__DATA__*/null').join(json);
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([html], {type:'text/html'}));
-  a.download = (T.title.trim().replace(/[^a-z0-9]+/gi,'-').toLowerCase() || 'sat-test') + '.html';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  if(state.flowIndex>=FLOW.length){state.screen='finish';state.finishedAt=Date.now();saveState();renderFinish();return;}
+  const item=FLOW[state.flowIndex];
+  if(item.type==='break'){
+    if(!state.breakEndAt)state.breakEndAt=Date.now()+10*60*1000;
+    state.screen='break';saveState();renderBreak();return;
+  }
+  state.screen='module';state.questionIndex=0;
+  const m=item.module;
+  if(!state.endTimes[m.id])state.endTimes[m.id]=Date.now()+m.minutes*60*1000;
+  saveState();renderModule();
 }
+function currentModule(){const item=FLOW[state.flowIndex];return item&&item.type==='module'?item.module:null;}
+function remainingMs(endAt){return Math.max(0,endAt-Date.now());}
+function timerMarkup(id){return '<div id="'+id+'" class="timer" aria-live="polite"></div>';}
+function refreshTimer(){
+  if(state.screen==='module'||state.screen==='review'){
+    const m=currentModule();if(!m)return;
+    const ms=remainingMs(state.endTimes[m.id]||Date.now());
+    const timer=document.getElementById('module-timer');
+    if(timer){timer.textContent=formatTime(Math.ceil(ms/1000));timer.classList.toggle('low',ms<=60000);}
+    const warning=document.getElementById('five-minute-warning');
+    if(warning)warning.classList.toggle('hidden',ms>5*60*1000||ms<=60000);
+    if(ms<=0)submitModule(true);
+  }else if(state.screen==='break'){
+    const ms=remainingMs(state.breakEndAt||Date.now());
+    const timer=document.getElementById('break-timer');if(timer)timer.textContent=formatTime(Math.ceil(ms/1000));
+    if(ms<=0){state.flowIndex++;state.breakEndAt=null;saveState();advanceToCurrent();}
+  }
+}
+function startTicker(){
+  clearInterval(tickHandle);
+  const screen=state.screen,flowIndex=state.flowIndex;
+  refreshTimer();
+  if(state.screen===screen&&state.flowIndex===flowIndex)tickHandle=setInterval(refreshTimer,250);
+}
+function drawPalette(m){
+  const answers=answersFor(m.id),flags=flagsFor(m.id),index=state.questionIndex;
+  const target=document.getElementById('question-palette');if(!target)return;
+  target.innerHTML=m.questions.map((_,i)=>'<button type="button" class="'+(answers[i]?'answered ':'')+(flags[i]?'flagged ':'')+(i===index?'current':'')+'" aria-label="Question '+(i+1)+(answers[i]?', answered':' , unanswered')+(flags[i]?', flagged':'')+'" onclick="jumpTo('+i+')">'+(i+1)+'</button>').join('');
+}
+function renderModule(){
+  clearInterval(tickHandle);
+  const m=currentModule();if(!m){advanceToCurrent();return;}
+  const questions=m.questions,answers=answersFor(m.id),flags=flagsFor(m.id);
+  if(!questions.length){state.flowIndex++;advanceToCurrent();return;}
+  state.questionIndex=Math.max(0,Math.min(state.questionIndex,questions.length-1));
+  const i=state.questionIndex,q=questions[i];
+  const answer=answers[i]||'';
+  const content=q.type==='mc'
+    ?q.options.map((option,k)=>'<button type="button" class="choice '+(answer===letters[k]?'selected':'')+'" aria-pressed="'+(answer===letters[k])+'" onclick="chooseAnswer(\''+letters[k]+'\')"><span class="choice-letter">'+letters[k]+'.</span><span class="pre">'+escapeHtml(option)+'</span></button>').join('')
+    :'<label for="grid-answer"><b>Your answer</b></label><input id="grid-answer" class="answer-input" type="text" autocomplete="off" value="'+escapeHtml(answer)+'" oninput="writeAnswer(this.value)" aria-label="Type your answer">';
+  app.innerHTML='<div class="card row"><div><b>'+escapeHtml(m.name)+'</b><div class="muted">'+questions.length+' questions</div></div><div>'+timerMarkup('module-timer')+'</div></div>'+
+   '<div id="five-minute-warning" class="notice hidden" role="status">5 minutes remaining in this module.</div>'+
+   '<div class="layout"><section class="card"><p class="muted"><b>Question '+(i+1)+' of '+questions.length+'</b></p><div class="pre" style="margin:14px 0 20px">'+escapeHtml(q.text)+'</div>'+content+
+   '<div class="row" style="margin-top:22px"><button class="btn secondary" onclick="moveQuestion(-1)" '+(i===0?'disabled':'')+'>Previous</button><div class="row" style="justify-content:flex-end"><button class="btn secondary" onclick="toggleFlag()">'+(flags[i]?'Unmark review':'Mark for review')+'</button>'+
+   (i<questions.length-1?'<button class="btn" onclick="moveQuestion(1)">Next</button>':'')+'</div></div></section>'+
+   '<aside class="card"><b>Question palette</b><div class="palette" id="question-palette"></div><p class="muted" style="font-size:.88rem">Blue: answered · amber underline: flagged</p><button class="btn green" style="width:100%" onclick="openReview()">Finish module</button></aside></div>';
+  drawPalette(m);startTicker();
+}
+function chooseAnswer(value){const m=currentModule();answersFor(m.id)[state.questionIndex]=value;saveState();renderModule();}
+function writeAnswer(value){const m=currentModule();answersFor(m.id)[state.questionIndex]=value;saveState();drawPalette(m);}
+function jumpTo(index){state.questionIndex=index;saveState();renderModule();}
+function moveQuestion(delta){const m=currentModule();state.questionIndex=Math.max(0,Math.min(m.questions.length-1,state.questionIndex+delta));saveState();renderModule();}
+function toggleFlag(){const m=currentModule(),flags=flagsFor(m.id);flags[state.questionIndex]=!flags[state.questionIndex];saveState();renderModule();}
+function openReview(){
+  clearInterval(tickHandle);state.screen='review';saveState();
+  const m=currentModule(),answers=answersFor(m.id),flags=flagsFor(m.id);
+  app.innerHTML='<section class="card"><div class="row"><h1>Review '+escapeHtml(m.name)+'</h1>'+timerMarkup('module-timer')+'</div><p>Check your answers before submitting. You cannot return to this module after submission.</p><div id="five-minute-warning" class="notice hidden" role="status">5 minutes remaining in this module.</div><div class="palette">'+m.questions.map((_,i)=>'<button type="button" class="'+(answers[i]?'answered ':'')+(flags[i]?'flagged':'')+'" onclick="returnToQuestion('+i+')">'+(i+1)+'</button>').join('')+'</div><p class="muted">Answered: '+answers.filter(a=>String(a).trim()).length+' · Unanswered: '+answers.filter(a=>!String(a).trim()).length+' · Flagged: '+flags.filter(Boolean).length+'</p><div class="row" style="justify-content:flex-start"><button class="btn secondary" onclick="returnToQuestion(0)">Back to module</button><button class="btn green" onclick="confirmSubmit()">Submit module</button></div></section>';
+  startTicker();
+}
+function returnToQuestion(index){state.questionIndex=index;state.screen='module';saveState();renderModule();}
+function confirmSubmit(){
+  const m=currentModule(),unanswered=answersFor(m.id).filter(a=>!String(a).trim()).length;
+  const message=unanswered?unanswered+' question(s) unanswered. Submit this module now?':'Submit this module now? You cannot return to it.';
+  if(!confirm(message))return;
+  submitModule(false);
+}
+function submitModule(auto){
+  if(state.screen!=='module'&&state.screen!=='review')return;
+  const m=currentModule();if(!m)return;
+  clearInterval(tickHandle);state.submitted[m.id]=true;state.screen='transition';state.flowIndex++;state.questionIndex=0;
+  saveState();advanceToCurrent();
+}
+function renderBreak(){
+  clearInterval(tickHandle);
+  app.innerHTML='<section class="card" style="text-align:center"><h1>Break</h1><p>Take a 10-minute break before the Math modules.</p>'+timerMarkup('break-timer')+'<div class="row" style="justify-content:center;margin-top:20px"><button class="btn secondary" onclick="skipBreak()">Skip break</button><button class="btn" onclick="resumeBreak()">Resume now</button></div></section>';
+  startTicker();
+}
+function skipBreak(){state.breakEndAt=Date.now();saveState();refreshTimer();}
+function resumeBreak(){state.breakEndAt=Date.now();saveState();refreshTimer();}
+function renderFinish(){
+  clearInterval(tickHandle);
+  app.innerHTML='<section class="card hero"><h1>Test complete</h1><p>Your answers are saved on this device.</p><button class="btn" onclick="viewResults()">View my results</button></section>';
+}
+function gradeGrid(student,accepted){
+  const normalize=s=>String(s??'').trim().toLowerCase().replace(/\s+/g,'');
+  const numeric=s=>{const v=normalize(s),fraction=v.match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\/([+-]?(?:\d+(?:\.\d*)?|\.\d+))$/);if(fraction){const denominator=Number(fraction[2]);return denominator===0?NaN:Number(fraction[1])/denominator;}return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(v)?Number(v):NaN;};
+  const a=normalize(student);if(!a)return false;
+  return String(accepted||'').split('|').some(key=>{const k=normalize(key);if(k===a)return true;const x=numeric(a),y=numeric(k);return Number.isFinite(x)&&Number.isFinite(y)&&Math.abs(x-y)<=1e-9*Math.max(1,Math.abs(x),Math.abs(y));});
+}
+function isCorrect(q,student){if(!String(student||'').trim())return false;return q.type==='mc'?student===q.answer:gradeGrid(student,q.answer);}
+function allResults(){
+  const rows=[];
+  TEST.modules.forEach(m=>m.questions.forEach((q,i)=>{
+    const student=(state.answers[m.id]||[])[i]||'',correct=isCorrect(q,student);
+    const correctAnswer=q.type==='mc'?q.answer+'. '+(q.options[letters.indexOf(q.answer)]||''):String(q.answer).split('|').join(' or ');
+    const studentAnswer=String(student).trim()?q.type==='mc'?student+'. '+(q.options[letters.indexOf(student)]||''):student:'No answer';
+    rows.push({module:m,question:q,index:i,student,correct,correctAnswer,studentAnswer});
+  }));
+  return rows;
+}
+function computeScores(){
+  const rows=allResults(),rw=rows.filter(r=>r.module.section==='rw'),math=rows.filter(r=>r.module.section==='math');
+  const rwCorrect=rw.filter(r=>r.correct).length,mathCorrect=math.filter(r=>r.correct).length,totalCorrect=rows.filter(r=>r.correct).length;
+  const sectionScore=(correct,total)=>total?200+(correct/total)*600:200;
+  const rwScore=sectionScore(rwCorrect,rw.length),mathScore=sectionScore(mathCorrect,math.length);
+  const modules=TEST.modules.map(module=>{const moduleRows=rows.filter(r=>r.module.id===module.id);return {name:module.name,correct:moduleRows.filter(r=>r.correct).length,total:moduleRows.length};});
+  return {rows,modules,totalCorrect,total:rows.length,percent:rows.length?100*totalCorrect/rows.length:0,rwCorrect,rwTotal:rw.length,mathCorrect,mathTotal:math.length,rwScore,mathScore,totalScore:Math.round((rwScore+mathScore)/10)*10};
+}
+function durationText(ms){if(!Number.isFinite(ms)||ms<0)return 'Unavailable';const minutes=Math.floor(ms/60000),seconds=Math.floor(ms/1000)%60;return minutes+'m '+seconds+'s';}
+function renderResults(){
+  clearInterval(tickHandle);const s=computeScores();
+  const elapsed=state.startedAt&&state.finishedAt?durationText(state.finishedAt-state.startedAt):'Unavailable';
+  app.innerHTML='<section class="card"><div class="row"><div><p class="muted">ESTIMATED SAT SCORE</p><h1 style="font-size:clamp(2.5rem,8vw,4.5rem);margin:0">'+s.totalScore+'<span style="font-size:.45em">/1600</span></h1><p class="muted">Estimate only; this is not an official College Board score.</p></div><div class="muted">Overall: '+s.percent.toFixed(1)+'% ('+s.totalCorrect+'/'+s.total+')<br>Time: '+escapeHtml(elapsed)+'</div></div><div class="score-grid" style="margin-top:16px"><div class="score-box"><span>Reading & Writing</span><strong>'+Math.round(s.rwScore)+'</strong><span>'+s.rwCorrect+'/'+s.rwTotal+' correct</span></div><div class="score-box"><span>Math</span><strong>'+Math.round(s.mathScore)+'</strong><span>'+s.mathCorrect+'/'+s.mathTotal+' correct</span></div><div class="score-box"><span>Total questions</span><strong>'+s.totalCorrect+'/'+s.total+'</strong><span>'+s.percent.toFixed(1)+'% correct</span></div></div><h2>Per-module scores</h2><div class="score-grid">'+s.modules.map(module=>'<div class="score-box"><span>'+escapeHtml(module.name)+'</span><strong>'+module.correct+'/'+module.total+'</strong><span>correct</span></div>').join('')+'</div><p class="muted">Estimated section formula: 200 + (correct ÷ section questions) × 600; total rounded to nearest 10. Empty sections use the 200-point baseline.</p><div class="row no-print" style="justify-content:flex-start"><button class="btn" onclick="shareResult()">Share result</button><button class="btn secondary" onclick="window.print()">Print / Save as PDF</button><button class="btn secondary" onclick="retakeTest()">Retake test</button></div></section>'+
+   '<section class="card"><h2>Question review</h2><div class="tabs no-print"><button class="'+(filterMode==='all'?'active':'')+'" onclick="setFilter(\'all\')">All</button><button class="'+(filterMode==='wrong'?'active':'')+'" onclick="setFilter(\'wrong\')">Wrong</button><button class="'+(filterMode==='unanswered'?'active':'')+'" onclick="setFilter(\'unanswered\')">Unanswered</button></div><div id="result-list"></div></section>';
+  drawResults();
+}
+function setFilter(mode){filterMode=mode;renderResults();}
+function drawResults(){
+  const target=document.getElementById('result-list');if(!target)return;
+  const rows=computeScores().rows.filter(r=>filterMode==='all'||(filterMode==='wrong'&&!r.correct&&String(r.student).trim())||(filterMode==='unanswered'&&!String(r.student).trim()));
+  if(!rows.length){target.innerHTML='<p class="muted">No questions match this filter.</p>';return;}
+  target.innerHTML=rows.map(r=>'<article class="card result-row '+(r.correct?'correct':'')+'"><div class="row"><b>'+escapeHtml(r.module.name)+' · Question '+(r.index+1)+'</b><span class="status '+(r.correct?'correct':'wrong')+'">'+(r.correct?'Correct':String(r.student).trim()?'Incorrect':'Unanswered')+'</span></div><details class="result-question" style="margin-top:10px"><summary>Show question</summary><div class="pre" style="margin-top:8px">'+escapeHtml(r.question.text)+'</div></details><p><b>Your answer:</b> <span class="pre">'+escapeHtml(r.studentAnswer)+'</span></p>'+(!r.correct?'<p><b>Correct answer:</b> <span class="pre">'+escapeHtml(r.correctAnswer)+'</span></p>':'')+'</article>').join('');
+}
+function resultShareText(){
+  const s=computeScores();return 'I scored '+s.totalScore+'/1600 (estimated) on '+TEST.title+'! R&W '+Math.round(s.rwScore)+', Math '+Math.round(s.mathScore);
+}
+function showToast(message){
+  const old=document.getElementById('toast');if(old)old.remove();
+  const toast=document.createElement('div');toast.id='toast';toast.className='toast';toast.setAttribute('role','status');toast.textContent=message;document.body.appendChild(toast);setTimeout(()=>toast.remove(),2400);
+}
+async function shareResult(){
+  const text=resultShareText();
+  if(navigator.share){try{await navigator.share({title:TEST.title,text});return;}catch(error){if(error&&error.name==='AbortError')return;}}
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText)await navigator.clipboard.writeText(text);
+    else{const field=document.createElement('textarea');field.value=text;field.style.position='fixed';field.style.opacity='0';document.body.appendChild(field);field.select();const copied=document.execCommand('copy');field.remove();if(!copied)throw new Error('Clipboard copy was not available');}
+    showToast('Copied!');
+  }catch(error){showToast('Unable to copy. Share text: '+text);}
+}
+function retakeTest(){if(!confirm('Retake this test? Your current saved answers will be erased.'))return;state=freshState();saveState();renderWelcome();}
+function viewResults(){state.screen='results';saveState();filterMode='all';renderResults();}
+function resumeSavedState(){
+  if(state.screen==='welcome'){renderWelcome();return;}
+  if(state.screen==='results'){renderResults();return;}
+  if(state.screen==='finish'){renderFinish();return;}
+  if(state.screen==='break'){renderBreak();return;}
+  if(state.screen==='review'){openReview();return;}
+  if(state.screen==='module'){const m=currentModule();if(m&&remainingMs(state.endTimes[m.id]||0)<=0)submitModule(true);else renderModule();return;}
+  renderWelcome();
+}
+loadState();resumeSavedState();
+</script></body></html>
+  </textarea>
 
-reset(); render();
-</script>
+  <script>
+  /* Generator logic: draft state is kept in one model and rendered as a fixed-order six-step wizard. */
+  'use strict';
+  const STEP_IDS=['info','rw1','rw2','math1','math2','review'];
+  const STEP_NAMES=['Test info','Reading & Writing - Module 1','Reading & Writing - Module 2','Math - Module 1','Math - Module 2','Review & Download'];
+  const MODULES=[
+    {id:'rw1',name:'Reading & Writing - Module 1',short:'R&W M1',section:'rw',recommended:27,minutes:32},
+    {id:'rw2',name:'Reading & Writing - Module 2',short:'R&W M2',section:'rw',recommended:27,minutes:32},
+    {id:'math1',name:'Math - Module 1',short:'Math M1',section:'math',recommended:22,minutes:35},
+    {id:'math2',name:'Math - Module 2',short:'Math M2',section:'math',recommended:22,minutes:35}
+  ];
+  const DRAFT_KEY='offline-sat-generator-draft-v2', letters=['A','B','C','D'];
+  const $=id=>document.getElementById(id);
+  const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const emptyModule=minutes=>({minutes,questions:[]});
+  const blankDraft=()=>({title:'',description:'',modules:{rw1:emptyModule(32),rw2:emptyModule(32),math1:emptyModule(35),math2:emptyModule(35)}});
+  let draft=blankDraft(),step=0;
+  function normalizeDraft(value){
+    const clean=blankDraft();
+    if(!value||typeof value!=='object')return clean;
+    clean.title=typeof value.title==='string'?value.title:'';
+    clean.description=typeof value.description==='string'?value.description:'';
+    MODULES.forEach(meta=>{
+      const source=value.modules&&value.modules[meta.id];if(!source||typeof source!=='object')return;
+      const minutes=Number(source.minutes);clean.modules[meta.id].minutes=Number.isFinite(minutes)&&minutes>=1?Math.floor(minutes):meta.minutes;
+      if(!Array.isArray(source.questions))return;
+      clean.modules[meta.id].questions=source.questions.filter(q=>q&&typeof q==='object').map(q=>({
+        type:q.type==='grid'?'grid':'mc',text:typeof q.text==='string'?q.text:'',
+        options:Array.isArray(q.options)?[0,1,2,3].map(i=>typeof q.options[i]==='string'?q.options[i]:''):['','','',''],
+        answer:typeof q.answer==='string'?q.answer:''
+      }));
+    });
+    return clean;
+  }
+  function saveDraft(){
+    try{localStorage.setItem(DRAFT_KEY,JSON.stringify({draft,step}));$('save-status').textContent='Draft saved on this device.';}
+    catch(error){$('save-status').textContent='Draft could not be saved; it remains available until this page is closed.';}
+  }
+  function restoreDraft(){
+    try{const raw=localStorage.getItem(DRAFT_KEY);if(!raw)return;const saved=JSON.parse(raw);draft=normalizeDraft(saved.draft);step=Number.isInteger(saved.step)?Math.max(0,Math.min(5,saved.step)):0;}
+    catch(error){draft=blankDraft();step=0;$('save-status').textContent='Saved draft could not be read; a new draft is ready.';}
+  }
+  function currentMeta(){return MODULES.find(m=>m.id===STEP_IDS[step]);}
+  function currentModule(){const meta=currentMeta();return meta?draft.modules[meta.id]:null;}
+  function setTitle(value){draft.title=value;saveDraft();}
+  function setDescription(value){draft.description=value;saveDraft();}
+  function setMinutes(id,value){const parsed=parseInt(value,10);draft.modules[id].minutes=Number.isFinite(parsed)&&parsed>0?parsed:1;saveDraft();}
+  function setQuestionText(id,index,value){draft.modules[id].questions[index].text=value;saveDraft();}
+  function setOption(id,index,option,value){draft.modules[id].questions[index].options[option]=value;saveDraft();}
+  function setAnswer(id,index,value){draft.modules[id].questions[index].answer=value;saveDraft();}
+  function setType(id,index,type){const q=draft.modules[id].questions[index];q.type=type;q.answer='';saveDraft();render();}
+  function setCorrect(id,index,value){draft.modules[id].questions[index].answer=value;saveDraft();render();}
+  function addQuestion(){
+    const mod=currentModule();mod.questions.push({type:'mc',text:'',options:['','','',''],answer:''});saveDraft();render();
+    const first=$('step-content').querySelector('.q-editor textarea');if(first)first.focus();
+  }
+  function deleteQuestion(id,index){if(!confirm('Delete question '+(index+1)+'?'))return;draft.modules[id].questions.splice(index,1);saveDraft();render();}
+  function backStep(){if(step>0){step--;saveDraft();render();}}
+  function nextStep(){if(step<5){step++;saveDraft();render();}}
+  function clearDraft(){
+    if(!confirm('Clear this saved draft and start over?'))return;
+    draft=blankDraft();step=0;try{localStorage.removeItem(DRAFT_KEY);$('save-status').textContent='Draft cleared.';}catch(error){$('save-status').textContent='Draft cleared for this page, but browser storage could not be cleared.';}
+    render();
+  }
+  function questionEditor(meta,q,index){
+    const mc=q.type==='mc'
+      ?'<p class="hint">Select the correct answer. Use the large fields to preserve pasted line breaks.</p>'+q.options.map((option,k)=>'<div class="option-edit"><label class="correct-choice"><input type="radio" name="correct-'+meta.id+'-'+index+'" '+(q.answer===letters[k]?'checked':'')+' onchange="setCorrect(\''+meta.id+'\','+index+',\''+letters[k]+'\')" aria-label="Correct answer '+letters[k]+'"><b>'+letters[k]+'.</b></label><textarea class="field" rows="2" placeholder="Option '+letters[k]+'" oninput="setOption(\''+meta.id+'\','+index+','+k+',this.value)">'+escapeHtml(option)+'</textarea></div>').join('')
+      :'<label class="field-label" for="answer-'+meta.id+'-'+index+'">Answer key</label><textarea id="answer-'+meta.id+'-'+index+'" class="field" rows="3" placeholder="Accepted answer(s), separated by |, e.g. 3/4|0.75" oninput="setAnswer(\''+meta.id+'\','+index+',this.value)">'+escapeHtml(q.answer)+'</textarea><p class="hint">Equivalent fractions and decimals are graded as equal.</p>';
+    return '<article class="q-editor"><div class="q-head"><h3>Question '+(index+1)+'</h3><div class="row"><select aria-label="Question '+(index+1)+' type" onchange="setType(\''+meta.id+'\','+index+',this.value)"><option value="mc" '+(q.type==='mc'?'selected':'')+'>Type A: Multiple choice</option><option value="grid" '+(q.type==='grid'?'selected':'')+'>Type B: Student-produced response</option></select><button class="button danger" type="button" onclick="deleteQuestion(\''+meta.id+'\','+index+')">Delete</button></div></div><label class="field-label" for="stem-'+meta.id+'-'+index+'">Question text</label><textarea id="stem-'+meta.id+'-'+index+'" class="field" rows="7" placeholder="Paste the passage, question, or context here" oninput="setQuestionText(\''+meta.id+'\','+index+',this.value)">'+escapeHtml(q.text)+'</textarea>'+mc+'</article>';
+  }
+  function renderModule(meta){
+    const module=draft.modules[meta.id],count=module.questions.length;
+    return '<h3 class="module-title">'+meta.name+'</h3><p class="muted">Recommended: '+meta.recommended+' questions. This is guidance only; you may use any number.</p><div class="row between" style="margin-top:17px"><label class="row"><b>Timer (minutes)</b><input class="field" style="width:110px" type="number" min="1" step="1" value="'+module.minutes+'" onchange="setMinutes(\''+meta.id+'\',this.value)" aria-label="'+meta.name+' timer in minutes"></label><span class="counter">'+count+' / '+meta.recommended+' questions</span></div>'+
+      (count?module.questions.map((q,i)=>questionEditor(meta,q,i)).join(''):'<div class="empty">No questions in this module yet.</div>')+
+      '<button class="button" style="width:100%;margin-top:14px;border:2px dashed #94a3b8;background:#f8fafc" type="button" onclick="addQuestion()">+ Add question to this module</button>';
+  }
+  function validationIssues(){
+    const errors=[],warnings=[],missingKeys=[];
+    if(!draft.title.trim())errors.push('Enter a test title.');
+    let total=0;
+    MODULES.forEach(meta=>{
+      const module=draft.modules[meta.id];
+      if(!module.questions.length)warnings.push(meta.name+' is empty and will be skipped.');
+      module.questions.forEach((q,i)=>{
+        total++;
+        const label=meta.name+', question '+(i+1);
+        if(!q.text.trim())errors.push(label+': question text is missing.');
+        if(q.type==='mc'){
+          if(q.options.some(option=>!option.trim()))errors.push(label+': fill in all four options.');
+          if(!q.answer)missingKeys.push(label+': correct answer is missing.');
+        }else if(!q.answer.trim())missingKeys.push(label+': answer key is missing.');
+      });
+    });
+    if(!total)warnings.push('The test has no questions. Students will proceed directly to the finish screen.');
+    return {errors,warnings,missingKeys,total};
+  }
+  function renderReview(){
+    const validation=validationIssues();
+    const rows=MODULES.map(meta=>'<tr><td>'+escapeHtml(meta.name)+'</td><td>'+draft.modules[meta.id].questions.length+' / '+meta.recommended+'</td><td>'+draft.modules[meta.id].minutes+' min</td></tr>').join('');
+    const notices=validation.warnings.concat(validation.missingKeys);
+    const warnings=notices.length?'<div class="warnings"><b>Warnings</b><ul>'+notices.map(w=>'<li>'+escapeHtml(w)+'</li>').join('')+'</ul></div>':'<p class="success-note">All four modules contain questions and answer keys.</p>';
+    const errors=validation.errors.length?'<div class="warnings"><b>Cannot download yet</b><ul>'+validation.errors.map(e=>'<li>'+escapeHtml(e)+'</li>').join('')+'</ul></div>':'';
+    const readiness=!validation.errors.length&&!validation.missingKeys.length?'<p class="success-note">All questions have text and answer keys. Your test is ready to download.</p>':'';
+    return '<h3 class="module-title">Review &amp; Download</h3><p class="muted">Test: <b>'+escapeHtml(draft.title||'Untitled')+'</b></p><div class="table-wrap"><table><thead><tr><th>Module</th><th>Questions (recommended)</th><th>Timer</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th>Total questions</th><th>'+validation.total+'</th><th>'+MODULES.reduce((sum,m)=>sum+Number(draft.modules[m.id].minutes||0),0)+' min total</th></tr></tfoot></table></div>'+warnings+errors+readiness+'<button class="button success" style="margin-top:18px" type="button" onclick="downloadTest()" '+(validation.errors.length||validation.missingKeys.length?'disabled':'')+'>Download Test File</button>';
+  }
+  function render(){
+    $('step-caption').textContent='Step '+(step+1)+' of 6 · '+STEP_NAMES[step];
+    $('progress').setAttribute('aria-valuenow',String(step+1));$('progress-fill').style.width=((step+1)/6*100)+'%';
+    $('back-button').disabled=step===0;
+    $('next-button').classList.toggle('hidden',step===5);
+    if(step===0){
+      $('step-content').innerHTML='<h3 class="module-title">Test information</h3><label class="field-label" for="test-title">Test title</label><input id="test-title" class="field" type="text" maxlength="200" placeholder="e.g. SAT Practice Test 1" value="'+escapeHtml(draft.title)+'" oninput="setTitle(this.value)"><label class="field-label" for="test-description">Description / student instructions</label><textarea id="test-description" class="field" rows="7" placeholder="Shown to students on the welcome screen" oninput="setDescription(this.value)">'+escapeHtml(draft.description)+'</textarea>';
+    }else if(step<5){$('step-content').innerHTML=renderModule(currentMeta());}
+    else{$('step-content').innerHTML=renderReview();}
+  }
+  function loadSample(){
+    if(!confirm('Replace the current test with the sample template?'))return;
+    const mc=(text,options,answer)=>({type:'mc',text,options,answer});
+    const grid=(text,answer)=>({type:'grid',text,options:['','','',''],answer});
+    draft=blankDraft();draft.title='SAT Practice Test (Sample)';draft.description='Welcome to this practice test. Read each question carefully and use the question palette to review your work.';
+    draft.modules.rw1.questions=[mc("Which choice completes the text with the most logical and precise word?\n\nAlthough the author's early novels were ______ by critics, her later work won widespread acclaim.",['celebrated','dismissed','imitated','anthologized'],'B'),mc('Which choice completes the text so that it conforms to Standard English?\n\nThe committee ______ reviewing the proposal since Monday.',['have been','has been','were','are'],'B')];
+    draft.modules.rw2.questions=[mc('Which choice completes the text so that it conforms to Standard English?\n\nThe researchers, ______ had spent years studying coral reefs, published their findings.',['who','whom','which','whose'],'A')];
+    draft.modules.math1.questions=[mc('If 3x + 7 = 25, what is the value of x?',['4','6','8','18'],'B'),grid('What is the value of 3/4 + 1/8? (Enter a fraction or decimal.)','7/8|0.875')];
+    draft.modules.math2.questions=[grid('A rectangle has length 12 and width 5. What is the length of its diagonal?','13')];
+    step=0;saveDraft();render();
+  }
+  function downloadTest(){
+    const validation=validationIssues();
+    if(validation.errors.length||validation.missingKeys.length){alert('Fix the required items on Review & Download before downloading.');return;}
+    const modules=MODULES.map(meta=>({id:meta.id,name:meta.name,section:meta.section,minutes:Number(draft.modules[meta.id].minutes)||meta.minutes,questions:draft.modules[meta.id].questions.map(q=>q.type==='mc'?{type:'mc',text:q.text,options:q.options,answer:q.answer}:{type:'grid',text:q.text,answer:q.answer})}));
+    const testData={id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2),title:draft.title,description:draft.description,modules};
+    const json=JSON.stringify(testData).replace(/</g,'\\u003c');
+    const template=$('student-template').value;
+    const html=template.replace('__TEST_DATA__',json).replace('<title>Offline SAT Practice Test</title>','<title>'+escapeHtml(draft.title)+'</title>');
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');
+    link.href=url;link.download=(draft.title.trim().replace(/[^a-z0-9]+/gi,'-').toLowerCase()||'sat-test')+'.html';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  restoreDraft();render();
+  </script>
 </body>
 </html>
